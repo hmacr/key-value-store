@@ -1,0 +1,17 @@
+[package]
+name = "store"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "store"
+path = "./src/lib.rs"
+
+[dependencies]
+anyhow.workspace = true
+csv.workspace = true
+sqlx.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+uuid = { version = "1.4.1", features = ["v4"] }
