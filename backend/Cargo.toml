@@ -5,29 +5,38 @@ edition = "2021"
 
 [workspace]
 members = [
-	"./store",
-	"./common"
+	"./api",
+	"./common",
+	"./store"
 ]
 
 [dependencies]
+api.workspace = true
 common.workspace = true
 store.workspace = true
 
+axum.workspace = true
 anyhow.workspace = true
 csv.workspace = true
+serde.workspace = true
 sqlx.workspace = true
 tokio.workspace = true
+tower.workspace = true
 tracing.workspace = true
 
 dotenvy = "^0.15.7"
 tracing-subscriber = "0.3"
 
 [workspace.dependencies]
+api = { path = "./api" }
 common = { path = "./common" }
 store = { path = "./store" }
 
 anyhow.version = "^1.0.75"
+axum = "0.6.20"
 csv = "1.2.2"
+serde = { version = "1.0", features = ["derive"] }
 sqlx = { version = "^0.7", features = ["postgres", "runtime-tokio"] }
 tokio = { version = "^1", features = ["full", "tracing"] }
+tower = "^0"
 tracing = "0.1"

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+#[derive(Clone)]
 pub struct InMemoryStore {
     data_container: HashMap<String, String>,
 }
@@ -9,6 +10,14 @@ impl InMemoryStore {
         InMemoryStore {
             data_container: HashMap::new(),
         }
+    }
+
+    pub fn get_all_data(&self) -> Vec<(String, String)> {
+        let mut all_data = vec![];
+        for (key, value) in &self.data_container {
+            all_data.push((key.clone(), value.clone()));
+        }
+        all_data
     }
 
     pub fn get_data(&self, key: &String) -> Option<String> {

@@ -1,5 +1,6 @@
 use uuid::Uuid;
 
+#[derive(Clone)]
 pub struct PostgresStore {
     db: sqlx::Pool<sqlx::Postgres>,
 }
@@ -7,6 +8,22 @@ pub struct PostgresStore {
 impl PostgresStore {
     pub fn new(db: sqlx::Pool<sqlx::Postgres>) -> Self {
         PostgresStore { db }
+    }
+
+    pub async fn get_all_data(&self) -> Vec<(String, String)> {
+        match sqlx::query!("SELECT name, data from store")
+            .fetch_all(&self.db)
+            .await
+        {
+            Ok(rows) => {
+                let mut all_data = vec![];
+                for row in rows {
+                    all_data.push((row.name, row.data));
+                }
+                all_data
+            }
+            Err(_) => vec![],
+        }
     }
 
     pub async fn get_data(&self, key: &String) -> Option<String> {
