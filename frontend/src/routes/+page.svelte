@@ -1,8 +1,7 @@
 <script lang="ts">
-	import Card from '$lib/components/Card.svelte';
+	import DisplayData from '$lib/layout/DisplayData.svelte';
+	import Navbar from '$lib/components/Navbar.svelte';
 </script>
 
-<div>
-	<h1>Key Value Store</h1>
-	<Card />
-</div>
+<Navbar />
+<DisplayData />
