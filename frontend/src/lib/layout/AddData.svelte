@@ -1,28 +1,22 @@
 <script lang="ts">
-	async function addData(event: SubmitEvent) {
+	import { addData, fetchAllData } from '$lib/client';
+	import { storeData } from '$lib/store';
+
+	function handleSubmit(event: SubmitEvent) {
 		const formData = new FormData(event.target as HTMLFormElement);
 
-		const key = formData.get('key');
-		const value = formData.get('value');
+		const key = formData.get('key') as FormDataEntryValue as string;
+		const value = formData.get('value') as FormDataEntryValue as string;
 
-		await fetch('http://localhost:3000/api/postgres', {
-			method: 'POST',
-			body: JSON.stringify({
-				key,
-				value
-			}),
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		})
-			.then((res) => console.log(res))
-			.catch((err) => console.log('adding data failed;', err));
+		addData(key, value)
+			.then((_) => fetchAllData())
+			.then((data) => ($storeData = data));
 	}
 </script>
 
 <div class="container w-[50%] mx-auto p-4 text-center border rounded-lg border-blue-500">
 	<h2 class="text-2xl text-blue-600">Add Data</h2>
-	<form on:submit|preventDefault={addData}>
+	<form on:submit|preventDefault={handleSubmit}>
 		<label>
 			<span class="inline-block text-pink-500 p-4">Key:</span>
 			<input type="text" name="key" class="rounded-md p-1" />
