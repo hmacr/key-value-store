@@ -19,7 +19,8 @@
 	});
 </script>
 
-<div class="container mx-auto p-2">
+<div class="container mx-auto p-2 my-6">
+	<h2 class="text-2xl text-blue-600 text-center">Stored Data</h2>
 	<Box>
 		{#each respData as data}
 			<Card key={data.key} value={data.value} />
