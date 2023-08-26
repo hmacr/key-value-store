@@ -16,15 +16,17 @@ mod postgres;
 mod users;
 
 pub async fn run_server(db: Pool<Postgres>, redis_client: redis::Client) -> anyhow::Result<()> {
-    let store = PostgresStore::new(db);
+    let postgres = PostgresStore::new(db);
     let redis = Redis::new(redis_client);
     let crypt = crypt::Crypt::new();
+
     let middlewares = ServiceBuilder::new()
         .layer(TraceLayer::new_for_http())
         .layer(CorsLayer::permissive())
-        .layer(Extension(store))
+        .layer(Extension(postgres))
         .layer(Extension(redis))
         .layer(Extension(crypt));
+
     let router = Router::new()
         .nest("/in_memory", in_memory::get_router())
         .nest("/postgres", postgres::get_router())
