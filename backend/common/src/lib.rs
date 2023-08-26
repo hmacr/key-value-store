@@ -1,6 +1,8 @@
 use anyhow::anyhow;
 use sqlx::{Pool, Postgres};
 
+pub mod crypt;
+
 type DB = Pool<Postgres>;
 
 pub async fn connect_postgres() -> anyhow::Result<DB> {

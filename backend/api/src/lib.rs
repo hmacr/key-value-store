@@ -1,7 +1,9 @@
-use axum::Router;
+use axum::{Extension, Router};
+use common::crypt;
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Postgres};
 use std::net::SocketAddr;
+use store::postgres::PostgresStore;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
@@ -10,17 +12,21 @@ use tracing;
 mod health_check;
 mod in_memory;
 mod postgres;
+mod users;
 
 pub async fn run_server(db: Pool<Postgres>) -> anyhow::Result<()> {
+    let store = PostgresStore::new(db);
+    let crypt = crypt::Crypt::new();
     let middlewares = ServiceBuilder::new()
         .layer(TraceLayer::new_for_http())
-        .layer(CorsLayer::permissive());
+        .layer(CorsLayer::permissive())
+        .layer(Extension(store))
+        .layer(Extension(crypt));
     let router = Router::new()
         .nest("/in_memory", in_memory::get_router())
-        .nest("/postgres", postgres::get_router(db));
+        .nest("/postgres", postgres::get_router())
+        .nest("/users", users::get_router());
     let app = Router::new()
-        // .layer(CorsLayer::permissive())
-        // .layer(TraceLayer::new_for_http());
         .nest("/", health_check::get_router())
         .nest("/api", router)
         .layer(middlewares);

@@ -61,4 +61,58 @@ impl PostgresStore {
             Err(_) => None,
         }
     }
+
+    pub async fn add_user(
+        &mut self,
+        name: &String,
+        password_hash: &String,
+        password_salt: &String,
+    ) -> Option<bool> {
+        let id = Uuid::new_v4().to_string();
+        tracing::debug!("generated uuid for {name} = {id}");
+        let res = sqlx::query!(
+            "INSERT INTO users (id, name, password_hash, password_salt) VALUES ($1, $2, $3, $4)",
+            id,
+            name,
+            password_hash,
+            password_salt
+        )
+        .execute(&self.db)
+        .await;
+        if let Err(e) = res {
+            tracing::debug!("postgres insert failed = {e}");
+            None
+        } else {
+            Some(true)
+        }
+    }
+
+    pub async fn get_user(&self, name: &String) -> Option<DBUser> {
+        tracing::debug!("db get user for {name}");
+        let res = sqlx::query_as!(
+            DBUser,
+            "SELECT id, name, password_hash, password_salt from users WHERE name = $1",
+            name
+        )
+        .fetch_optional(&self.db)
+        .await;
+        match res {
+            Ok(user) => {
+                tracing::debug!("db_user = {:?}", user);
+                user
+            }
+            Err(err) => {
+                tracing::debug!("get user errored = {err}");
+                None
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct DBUser {
+    pub id: String,
+    pub name: String,
+    pub password_hash: String,
+    pub password_salt: String,
 }

@@ -5,19 +5,14 @@ use axum::{
     routing::{delete, get, post},
     Extension, Json, Router,
 };
-use sqlx::{Pool, Postgres};
 use store::postgres::PostgresStore;
-use tower::ServiceBuilder;
 
-pub fn get_router(db: Pool<Postgres>) -> Router {
-    let store = PostgresStore::new(db);
-    let layer = ServiceBuilder::new().layer(Extension(store));
+pub fn get_router() -> Router {
     Router::new()
         .route("/", get(get_all_data))
         .route("/", post(add_data))
         .route("/:key", get(get_data))
         .route("/:key", delete(delete_data))
-        .layer(layer)
 }
 
 async fn get_all_data(
