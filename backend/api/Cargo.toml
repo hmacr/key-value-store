@@ -9,6 +9,7 @@ store.workspace = true
 
 anyhow.workspace = true
 axum.workspace = true
+redis.workspace = true
 serde.workspace = true
 sqlx.workspace = true
 tower.workspace = true

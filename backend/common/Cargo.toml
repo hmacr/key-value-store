@@ -6,5 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow.workspace = true
 data-encoding.workspace = true
+redis.workspace = true
 ring.workspace = true
 sqlx.workspace = true
+uuid.workspace = true

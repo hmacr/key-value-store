@@ -2,6 +2,7 @@ use axum::{http::StatusCode, routing::post, Extension, Json, Router};
 use common::crypt::Crypt;
 use serde::Deserialize;
 use store::postgres::PostgresStore;
+use store::redis::Redis;
 
 #[derive(Deserialize, Debug)]
 struct UserRequest {
@@ -36,6 +37,7 @@ async fn register_user(
 
 async fn login_user(
     Extension(store): Extension<PostgresStore>,
+    Extension(redis): Extension<Redis>,
     Extension(crypt): Extension<Crypt>,
     Json(user_request): Json<UserRequest>,
 ) -> Result<String, StatusCode> {
@@ -50,7 +52,14 @@ async fn login_user(
             );
             tracing::debug!(authenticated);
             if authenticated {
-                Ok("user authenticated".to_string())
+                let session_id = common::generate_uuid();
+                let session_set = redis.set_session_id(&user.id, &session_id).await;
+                if session_set {
+                    let s = format!("user authenticated with session id = {session_id}");
+                    Ok(s)
+                } else {
+                    Err(StatusCode::INTERNAL_SERVER_ERROR)
+                }
             } else {
                 Err(StatusCode::UNAUTHORIZED)
             }

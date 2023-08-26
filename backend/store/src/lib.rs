@@ -3,6 +3,7 @@ use sqlx::{Pool, Postgres};
 pub mod file;
 pub mod in_memory;
 pub mod postgres;
+pub mod redis;
 
 pub enum StoreType {
     InMemory,

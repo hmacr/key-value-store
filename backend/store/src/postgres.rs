@@ -1,5 +1,3 @@
-use uuid::Uuid;
-
 #[derive(Clone)]
 pub struct PostgresStore {
     db: sqlx::Pool<sqlx::Postgres>,
@@ -37,7 +35,7 @@ impl PostgresStore {
     }
 
     pub async fn put_data(&mut self, key: &String, value: &String) {
-        let id = Uuid::new_v4().to_string();
+        let id = common::generate_uuid();
         tracing::debug!("generated uuid for {key} = {id}");
         let res = sqlx::query!(
             "INSERT INTO store (id, name, data) VALUES ($1, $2, $3)",
@@ -68,7 +66,7 @@ impl PostgresStore {
         password_hash: &String,
         password_salt: &String,
     ) -> Option<bool> {
-        let id = Uuid::new_v4().to_string();
+        let id = common::generate_uuid();
         tracing::debug!("generated uuid for {name} = {id}");
         let res = sqlx::query!(
             "INSERT INTO users (id, name, password_hash, password_salt) VALUES ($1, $2, $3, $4)",
