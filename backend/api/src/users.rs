@@ -57,7 +57,7 @@ async fn login_user(
                 let session_id = common::generate_uuid();
                 let session_set = redis.set_session_id(&user.id, &session_id).await;
                 if session_set {
-                    let session_cookie = format!("session_id={session_id}");
+                    let session_cookie = format!("user_id={}", user.id);
                     let mut header_map = header::HeaderMap::new();
                     header_map.insert(
                         header::SET_COOKIE,

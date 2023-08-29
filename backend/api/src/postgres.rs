@@ -2,11 +2,14 @@ use crate::{http_response, KeyValue};
 use axum::{
     body::BoxBody,
     extract::Path,
+    http::{header, Request},
+    middleware::{self, Next},
     response::Response as AxumResponse,
     routing::{delete, get, post},
     Extension, Json, Router,
 };
 use store::postgres::PostgresStore;
+use store::redis::Redis;
 
 pub fn get_router() -> Router {
     Router::new()
@@ -14,6 +17,30 @@ pub fn get_router() -> Router {
         .route("/", post(add_data))
         .route("/:key", get(get_data))
         .route("/:key", delete(delete_data))
+        .layer(middleware::from_fn(auth_middleware))
+}
+
+async fn auth_middleware<T>(
+    Extension(redis): Extension<Redis>,
+    request: Request<T>,
+    next: Next<T>,
+) -> AxumResponse<BoxBody> {
+    let cookies = request.headers().get(header::COOKIE);
+    match cookies {
+        Some(cookie) => {
+            let mut cookie_pair_iter = cookie.to_str().unwrap().split("=").into_iter(); // assuming only session cookie is set
+            cookie_pair_iter.next();
+            let user_id = cookie_pair_iter.next().unwrap();
+            match redis.get_session_id(&user_id.to_string()).await {
+                Some(session_id) => {
+                    tracing::debug!("session available, session_id = {session_id}");
+                    next.run(request).await
+                }
+                None => http_response::unauth(),
+            }
+        }
+        None => http_response::unauth(),
+    }
 }
 
 async fn get_all_data(Extension(postgres): Extension<PostgresStore>) -> AxumResponse<BoxBody> {
