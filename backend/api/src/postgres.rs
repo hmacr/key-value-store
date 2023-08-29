@@ -1,7 +1,8 @@
-use crate::KeyValue;
+use crate::{http_response, KeyValue};
 use axum::{
+    body::BoxBody,
     extract::Path,
-    http::StatusCode,
+    response::Response as AxumResponse,
     routing::{delete, get, post},
     Extension, Json, Router,
 };
@@ -15,41 +16,42 @@ pub fn get_router() -> Router {
         .route("/:key", delete(delete_data))
 }
 
-async fn get_all_data(
-    Extension(postgres): Extension<PostgresStore>,
-) -> Result<Json<Vec<KeyValue>>, StatusCode> {
+async fn get_all_data(Extension(postgres): Extension<PostgresStore>) -> AxumResponse<BoxBody> {
     let mut all_data = vec![];
     for (key, value) in postgres.get_all_data().await {
         all_data.push(KeyValue { key, value });
     }
-    Ok(Json(all_data))
+    http_response::json_body(&all_data)
 }
 
 async fn add_data(
     Extension(mut postgres): Extension<PostgresStore>,
     Json(key_value): Json<KeyValue>,
-) -> Result<String, StatusCode> {
+) -> AxumResponse<BoxBody> {
     postgres.put_data(&key_value.key, &key_value.value).await;
-    Ok(String::from("successfully inserted data"))
+    http_response::string_body("successfully inserted data".to_string(), None)
 }
 
 async fn get_data(
     Extension(postgres): Extension<PostgresStore>,
     Path(key): Path<String>,
-) -> Result<Json<KeyValue>, StatusCode> {
+) -> AxumResponse<BoxBody> {
     match postgres.get_data(&key).await {
         Some(value) => {
             let key_value = KeyValue { key, value };
-            Ok(Json(key_value))
+            http_response::json_body(&key_value)
         }
-        None => Err(StatusCode::NOT_FOUND),
+        None => http_response::not_found(),
     }
 }
 
 async fn delete_data(
     Extension(mut postgres): Extension<PostgresStore>,
     Path(key): Path<String>,
-) -> Result<String, StatusCode> {
+) -> AxumResponse<BoxBody> {
     postgres.remove_data(&key).await;
-    Ok(String::from("successfully deleted data for the input key"))
+    http_response::string_body(
+        "successfully deleted data for the input key".to_string(),
+        None,
+    )
 }

@@ -11,6 +11,7 @@ use tower_http::trace::TraceLayer;
 use tracing;
 
 mod health_check;
+mod http_response;
 mod in_memory;
 mod postgres;
 mod users;

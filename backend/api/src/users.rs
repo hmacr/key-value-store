@@ -1,4 +1,8 @@
-use axum::{http::StatusCode, routing::post, Extension, Json, Router};
+use crate::http_response;
+use axum::{
+    body::BoxBody, http::header, response::Response as AxumResponse, routing::post, Extension,
+    Json, Router,
+};
 use common::crypt::Crypt;
 use serde::Deserialize;
 use store::postgres::PostgresStore;
@@ -20,18 +24,17 @@ async fn register_user(
     Extension(mut store): Extension<PostgresStore>,
     Extension(crypt): Extension<Crypt>,
     Json(user_request): Json<UserRequest>,
-) -> Result<String, StatusCode> {
+) -> AxumResponse<BoxBody> {
     let (password_hash, password_salt) = crypt
         .generate_password_hash(&user_request.password)
         .unwrap();
     tracing::debug!("password_hash = {password_hash}\npassword_salt={password_salt}");
-    let res = store
+    match store
         .add_user(&user_request.name, &password_hash, &password_salt)
-        .await;
-    if let Some(_) = res {
-        Ok("user created successfully".to_string())
-    } else {
-        Err(StatusCode::BAD_REQUEST)
+        .await
+    {
+        Some(_) => http_response::string_body("user created successfully".to_string(), None),
+        None => http_response::bad_request(),
     }
 }
 
@@ -40,10 +43,9 @@ async fn login_user(
     Extension(redis): Extension<Redis>,
     Extension(crypt): Extension<Crypt>,
     Json(user_request): Json<UserRequest>,
-) -> Result<String, StatusCode> {
+) -> AxumResponse<BoxBody> {
     tracing::debug!("user request = {:?}", user_request);
-    let db_user = store.get_user(&user_request.name).await;
-    match db_user {
+    match store.get_user(&user_request.name).await {
         Some(user) => {
             let authenticated = crypt.verify_password(
                 &user_request.password,
@@ -55,15 +57,20 @@ async fn login_user(
                 let session_id = common::generate_uuid();
                 let session_set = redis.set_session_id(&user.id, &session_id).await;
                 if session_set {
-                    let s = format!("user authenticated with session id = {session_id}");
-                    Ok(s)
+                    let session_cookie = format!("session_id={session_id}");
+                    let mut header_map = header::HeaderMap::new();
+                    header_map.insert(
+                        header::SET_COOKIE,
+                        header::HeaderValue::from_str(&session_cookie).unwrap(),
+                    );
+                    http_response::string_body("user authenticated".to_string(), Some(header_map))
                 } else {
-                    Err(StatusCode::INTERNAL_SERVER_ERROR)
+                    http_response::internal_server_error()
                 }
             } else {
-                Err(StatusCode::UNAUTHORIZED)
+                http_response::unauth()
             }
         }
-        None => Err(StatusCode::UNAUTHORIZED),
+        None => http_response::unauth(),
     }
 }
